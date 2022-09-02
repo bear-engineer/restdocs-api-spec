@@ -18,15 +18,28 @@ open class OpenApi3Task : OpenApiBaseTask() {
     }
 
     override fun generateSpecification(resourceModels: List<ResourceModel>): String {
-        return OpenApi3Generator.generateAndSerialize(
-            resources = resourceModels,
-            servers = servers,
-            title = title,
-            description = apiDescription,
-            tagDescriptions = tagDescriptions,
-            version = apiVersion,
-            oauth2SecuritySchemeDefinition = oauth2SecuritySchemeDefinition,
-            format = format
-        )
+        if(oauth2SecuritySchemeDefinition != null) {
+            return OpenApi3Generator.generateAndSerialize(
+                resources = resourceModels,
+                servers = servers,
+                title = title,
+                description = apiDescription,
+                tagDescriptions = tagDescriptions,
+                version = apiVersion,
+                oauth2SecuritySchemeDefinition = oauth2SecuritySchemeDefinition,
+                format = format
+            )
+        } else {
+            return OpenApi3Generator.generateAndSerialize(
+                resources = resourceModels,
+                servers = servers,
+                title = title,
+                description = apiDescription,
+                tagDescriptions = tagDescriptions,
+                version = apiVersion,
+                headerSecuritySchemeDefinition = headerSecuritySchemeDefinition,
+                format = format
+            )
+        }
     }
 }

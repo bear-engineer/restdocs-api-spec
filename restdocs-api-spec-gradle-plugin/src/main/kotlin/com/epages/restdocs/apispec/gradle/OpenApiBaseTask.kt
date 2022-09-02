@@ -1,5 +1,6 @@
 package com.epages.restdocs.apispec.gradle
 
+import com.epages.restdocs.apispec.model.HeaderConfiguration
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 
@@ -26,6 +27,9 @@ abstract class OpenApiBaseTask : ApiSpecTask() {
 
     @Input @Optional
     var oauth2SecuritySchemeDefinition: PluginOauth2Configuration? = null
+
+    @Input @Optional
+    var headerSecuritySchemeDefinition: List<HeaderConfiguration>? = null
 
     override fun outputFileExtension() = format
 

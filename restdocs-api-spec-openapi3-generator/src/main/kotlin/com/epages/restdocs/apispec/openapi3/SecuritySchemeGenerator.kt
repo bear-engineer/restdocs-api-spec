@@ -1,5 +1,6 @@
 package com.epages.restdocs.apispec.openapi3
 
+import com.epages.restdocs.apispec.model.HeaderConfiguration
 import com.epages.restdocs.apispec.model.Oauth2Configuration
 import com.epages.restdocs.apispec.model.SecurityRequirements
 import com.epages.restdocs.apispec.model.SecurityType
@@ -16,6 +17,21 @@ internal object SecuritySchemeGenerator {
     private const val API_KEY_SECURITY_NAME = "api_key"
     private const val BASIC_SECURITY_NAME = "basic"
     private const val JWT_BEARER_SECURITY_NAME = "bearerAuthJWT"
+
+    fun OpenAPI.addSecurityDefinitions(headerConfigurations: List<HeaderConfiguration>?) {
+        headerConfigurations?.let { configurations ->
+            if (configurations.isNotEmpty()) {
+                configurations.forEach { configuration ->
+                    components.addSecuritySchemes(configuration.name, SecurityScheme().apply {
+                        type = SecurityScheme.Type.valueOf(configuration.type)
+                        this.`in` = SecurityScheme.In.valueOf(configuration.`in`)
+                        this.description = configuration.description
+                        this.name = configuration.name
+                    })
+                }
+            }
+        }
+    }
 
     fun OpenAPI.addSecurityDefinitions(oauth2SecuritySchemeDefinition: Oauth2Configuration?) {
         if (oauth2SecuritySchemeDefinition?.flows?.isNotEmpty() == true) {
@@ -38,21 +54,25 @@ internal object SecuritySchemeGenerator {
                             .tokenUrl(oauth2SecuritySchemeDefinition.tokenUrl)
                             .scopes(allScopes, scopeAndDescriptions)
                     )
+
                     "clientCredentials" -> flows.clientCredentials(
                         OAuthFlow()
                             .tokenUrl(oauth2SecuritySchemeDefinition.tokenUrl)
                             .scopes(allScopes, scopeAndDescriptions)
                     )
+
                     "password" -> flows.password(
                         OAuthFlow()
                             .tokenUrl(oauth2SecuritySchemeDefinition.tokenUrl)
                             .scopes(allScopes, scopeAndDescriptions)
                     )
+
                     "implicit" -> flows.implicit(
                         OAuthFlow()
                             .authorizationUrl(oauth2SecuritySchemeDefinition.authorizationUrl)
                             .scopes(allScopes, scopeAndDescriptions)
                     )
+
                     else -> throw IllegalArgumentException("Unknown flow '$flow' in oauth2SecuritySchemeDefinition")
                 }
             }
@@ -90,7 +110,10 @@ internal object SecuritySchemeGenerator {
         }
     }
 
-    fun Operation.addSecurityItemFromSecurityRequirements(securityRequirements: SecurityRequirements?, oauth2SecuritySchemeDefinition: Oauth2Configuration?) {
+    fun Operation.addSecurityItemFromSecurityRequirements(
+        securityRequirements: SecurityRequirements?,
+        oauth2SecuritySchemeDefinition: Oauth2Configuration?
+    ) {
         if (securityRequirements != null) {
             when (securityRequirements.type) {
                 SecurityType.OAUTH2 -> oauth2SecuritySchemeDefinition?.flows?.map {
@@ -101,9 +124,23 @@ internal object SecuritySchemeGenerator {
                         )
                     )
                 }
+
                 SecurityType.BASIC -> addSecurityItem(SecurityRequirement().addList(BASIC_SECURITY_NAME))
                 SecurityType.API_KEY -> addSecurityItem(SecurityRequirement().addList(API_KEY_SECURITY_NAME))
                 SecurityType.JWT_BEARER -> addSecurityItem(SecurityRequirement().addList(JWT_BEARER_SECURITY_NAME))
+            }
+        }
+    }
+
+    fun Operation.addSecurityItemFromSecurityRequirements(
+        securityRequirements: SecurityRequirements?
+    ) {
+        if (securityRequirements != null) {
+            when (securityRequirements.type) {
+                SecurityType.BASIC -> addSecurityItem(SecurityRequirement().addList(BASIC_SECURITY_NAME))
+                SecurityType.API_KEY -> addSecurityItem(SecurityRequirement().addList(API_KEY_SECURITY_NAME))
+                SecurityType.JWT_BEARER -> addSecurityItem(SecurityRequirement().addList(JWT_BEARER_SECURITY_NAME))
+                else -> {}
             }
         }
     }
@@ -123,7 +160,7 @@ internal object SecuritySchemeGenerator {
         openApi.paths
             .flatMap { it.value.readOperations() }
             .mapNotNull { it.security }
-            .flatMap { it }
+            .flatten()
             .flatMap { it.keys }
             .any { it == name }
 
@@ -139,4 +176,12 @@ internal object SecuritySchemeGenerator {
                     }
             }.toSet()
     }
+
+    fun SecurityScheme.Type.findOf(type: String): SecurityScheme.Type = SecurityScheme.Type.values()
+        .first {
+            it.toString() == type
+        }
+
+    fun SecurityScheme.In.findOf(`in`: String): SecurityScheme.In =
+        SecurityScheme.In.values().first { it.toString() == `in` }
 }

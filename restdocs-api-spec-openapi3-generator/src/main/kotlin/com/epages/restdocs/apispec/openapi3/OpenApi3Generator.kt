@@ -1,17 +1,7 @@
 package com.epages.restdocs.apispec.openapi3
 
 import com.epages.restdocs.apispec.jsonschema.JsonSchemaFromFieldDescriptorsGenerator
-import com.epages.restdocs.apispec.model.AbstractParameterDescriptor
-import com.epages.restdocs.apispec.model.FieldDescriptor
-import com.epages.restdocs.apispec.model.HTTPMethod
-import com.epages.restdocs.apispec.model.HeaderDescriptor
-import com.epages.restdocs.apispec.model.Oauth2Configuration
-import com.epages.restdocs.apispec.model.ParameterDescriptor
-import com.epages.restdocs.apispec.model.RequestModel
-import com.epages.restdocs.apispec.model.ResourceModel
-import com.epages.restdocs.apispec.model.ResponseModel
-import com.epages.restdocs.apispec.model.SimpleType
-import com.epages.restdocs.apispec.model.groupByPath
+import com.epages.restdocs.apispec.model.*
 import com.epages.restdocs.apispec.openapi3.SecuritySchemeGenerator.addSecurityDefinitions
 import com.epages.restdocs.apispec.openapi3.SecuritySchemeGenerator.addSecurityItemFromSecurityRequirements
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -78,6 +68,40 @@ object OpenApi3Generator {
         }
     }
 
+    internal fun generate(
+        resources: List<ResourceModel>,
+        servers: List<Server>,
+        title: String = "API",
+        description: String? = null,
+        tagDescriptions: Map<String, String> = emptyMap(),
+        version: String = "1.0.0",
+        headerSecuritySchemeDefinition: List<HeaderConfiguration>?
+    ): OpenAPI {
+        return OpenAPI().apply {
+
+            this.servers = servers
+            info = Info().apply {
+                this.title = title
+                this.description = description
+                this.version = version
+            }
+            this.tags(
+                tagDescriptions.map {
+                    Tag().apply {
+                        this.name = it.key
+                        this.description = it.value
+                    }
+                }
+            )
+            paths = generatePaths(
+                resources,
+                null
+            )
+            extractDefinitions()
+            addSecurityDefinitions(headerSecuritySchemeDefinition)
+        }
+    }
+
     fun generateAndSerialize(
         resources: List<ResourceModel>,
         servers: List<Server>,
@@ -98,6 +122,29 @@ object OpenApi3Generator {
                 tagDescriptions = tagDescriptions,
                 version = version,
                 oauth2SecuritySchemeDefinition = oauth2SecuritySchemeDefinition
+            )
+        )
+
+    fun generateAndSerialize(
+        resources: List<ResourceModel>,
+        servers: List<Server>,
+        title: String = "API",
+        description: String? = null,
+        tagDescriptions: Map<String, String> = emptyMap(),
+        version: String = "1.0.0",
+        headerSecuritySchemeDefinition: List<HeaderConfiguration>? = null,
+        format: String
+    ) =
+        ApiSpecificationWriter.serialize(
+            format,
+            generate(
+                resources = resources,
+                servers = servers,
+                title = title,
+                description = description,
+                tagDescriptions = tagDescriptions,
+                version = version,
+                headerSecuritySchemeDefinition = headerSecuritySchemeDefinition
             )
         )
 

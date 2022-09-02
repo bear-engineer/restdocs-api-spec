@@ -12,7 +12,7 @@ plugins {
     id("pl.allegro.tech.build.axion-release") version "1.9.2"
     jacoco
     java
-    kotlin("jvm") version "1.4.20" apply false
+    kotlin("jvm") version "1.4.20-TEDDY-SNAPSHOT" apply false
     `maven-publish`
 }
 
